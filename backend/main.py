@@ -92,3 +92,20 @@ def get_sentences(word: str):
             status_code=503,
             detail="Сервис примеров предложений временно недоступен"
         )
+    
+@app.on_event("startup")
+def startup():
+    # Ждем пока БД станет доступной
+    import time
+    from sqlalchemy.exc import OperationalError
+    
+    retries = 5
+    while retries > 0:
+        try:
+            models.Base.metadata.create_all(bind=database.engine)
+            break
+        except OperationalError:
+            retries -= 1
+            time.sleep(2)
+            if retries == 0:
+                raise

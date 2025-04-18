@@ -1,55 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import WordList from './components/WordList';
-import AddWordForm from './components/AddWordForm';
-import SentenceExercises from './components/SentenceExercises';
 import './App.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function App() {
   const [words, setWords] = useState([]);
-  const [selectedWord, setSelectedWord] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Загрузка слов с бэкенда
   useEffect(() => {
+    const fetchWords = async () => {
+      try {
+        const response = await fetch('/api/words');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Убеждаемся, что data - массив
+        if (Array.isArray(data)) {
+          setWords(data);
+        } else {
+          console.error('Ожидался массив, получено:', data);
+          setWords([]);
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке слов:', err);
+        setError(err.message);
+        setWords([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchWords();
   }, []);
 
-  const fetchWords = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/words');
-      const data = await response.json();
-      setWords(data);
-    } catch (error) {
-      console.error('Ошибка при загрузке слов:', error);
-    }
-  };
-
-  const addWord = async (word) => {
-    try {
-      const response = await fetch('http://localhost:8000/words', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(word)
-      });
-      const newWord = await response.json();
-      setWords([...words, newWord]);
-    } catch (error) {
-      console.error('Ошибка при добавлении слова:', error);
-    }
-  };
+  if (loading) return <div>Загрузка...</div>;
+  if (error) return <div>Ошибка: {error}</div>;
 
   return (
-    <div className="app">
-      <h1>Изучение немецких слов</h1>
-      <div className="container">
-        <div className="word-section">
-          <AddWordForm onAdd={addWord} />
-          <WordList words={words} />
-        </div>
-        {selectedWord && (
-          <div className="exercises-section">
-            <SentenceExercises word={selectedWord} />
-          </div>
+    <div className="app-container">
+      <h1>Немецкий словарь</h1>
+      
+      <div className="words-list">
+        <h2>Ваши слова:</h2>
+        {words.length > 0 ? (
+          <ul>
+            {words.map((word, index) => (
+              <li key={index}>
+                <strong>{word.german}</strong> - {word.translation}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Слова не найдены</p>
         )}
       </div>
     </div>

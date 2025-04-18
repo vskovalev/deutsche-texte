@@ -6,13 +6,13 @@ from sqlalchemy.orm import Session
 import requests
 import models
 import database
-
+from fastapi.responses import HTMLResponse  # Добавьте этот импорт
 app = FastAPI()
 
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://frontend:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,6 +46,52 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    return """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>German Words API</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                h1 {
+                    color: #2c3e50;
+                }
+                .links {
+                    margin-top: 20px;
+                }
+                a {
+                    display: inline-block;
+                    margin-right: 15px;
+                    color: #3498db;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>German Words Learning App - Backend</h1>
+            <p>This is the backend API server for the German Words learning application.</p>
+            
+            <div class="links">
+                <a href="/docs">API Documentation (Swagger UI)</a>
+                <a href="/redoc">Alternative Docs (ReDoc)</a>
+            </div>
+            
+            <p>Frontend is available at <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></p>
+        </body>
+    </html>
+    """
+
 
 @app.on_event("startup")
 def startup():

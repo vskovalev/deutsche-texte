@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:13
@@ -16,25 +14,37 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
+    networks:
+      - app-network
+      
   backend:
     build: ./backend
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/german_words
-      PYTHONUNBUFFERED: 1
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: on-failure
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/german_words
+    networks:
+      - app-network
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
-    depends_on:
-      - backend
+      - "3000:3000"  # Доступ с хоста
+    expose:
+      - "3000"       # Доступ внутри Docker-сети
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # Для hot-reload в Docker
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src    # Для live-обновлений
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
+
+networks:
+  app-network:
+    name: german-words-network
+    driver: bridge
